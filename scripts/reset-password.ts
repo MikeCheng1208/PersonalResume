@@ -16,11 +16,27 @@ async function resetPassword() {
     process.exit(1)
   }
 
-  const client = new MongoClient(MONGODB_URI)
+  // MongoDB 連接選項
+  // Zeabur 的 MongoDB 通常不需要 TLS
+  const options = {
+    serverSelectionTimeoutMS: 30000,
+    connectTimeoutMS: 30000,
+    socketTimeoutMS: 30000,
+    maxPoolSize: 10,
+    retryWrites: true,
+    retryReads: true,
+  }
+
+  const client = new MongoClient(MONGODB_URI, options)
 
   try {
     console.log('📡 連接資料庫...')
+    console.log(`   URI: ${MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')}`)
     await client.connect()
+
+    // 測試連接
+    await client.db('admin').command({ ping: 1 })
+    console.log('✅ 資料庫連接成功')
 
     const dbName = process.env.MONGODB_DATABASE || 'zeabur'
     const db = client.db(dbName)
