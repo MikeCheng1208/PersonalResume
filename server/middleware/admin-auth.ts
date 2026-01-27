@@ -11,10 +11,11 @@ export default defineEventHandler(async (event) => {
     return
   }
 
-  // 允許登入相關 API 不需驗證
+  // 允許登入相關 API 和除錯端點不需驗證
   const publicPaths = [
     '/api/admin/auth/login',
-    '/api/admin/auth/logout'
+    '/api/admin/auth/logout',
+    '/api/admin/debug/' // 除錯端點
   ]
 
   if (publicPaths.some(p => path.startsWith(p))) {

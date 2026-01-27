@@ -34,22 +34,37 @@ export async function getMongoClient(): Promise<MongoClient> {
   }
 
   try {
+    console.log('🔌 正在連接 MongoDB...')
+    console.log('   URI 預覽:', uri.substring(0, 30) + '...')
+
+    // Zeabur MongoDB 連接選項
+    // 注意：Zeabur 的 MongoDB 通常不需要 TLS
     client = new MongoClient(uri, {
       maxPoolSize: 10,
       minPoolSize: 2,
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 30000, // 增加到 30 秒
       socketTimeoutMS: 60000,
-      connectTimeoutMS: 10000,
+      connectTimeoutMS: 30000, // 增加到 30 秒
       heartbeatFrequencyMS: 10000,
       retryWrites: true,
       retryReads: true,
+      // 重要：添加這些選項來改善連接穩定性
+      maxIdleTimeMS: 300000, // 5 分鐘
+      waitQueueTimeoutMS: 10000,
     })
 
     await client.connect()
+
+    // 測試連接
+    await client.db('admin').command({ ping: 1 })
+
     console.log('✅ MongoDB 連線成功')
     return client
-  } catch (error) {
-    console.error('❌ MongoDB 連線失敗:', error)
+  } catch (error: any) {
+    console.error('❌ MongoDB 連線失敗')
+    console.error('   錯誤類型:', error.constructor.name)
+    console.error('   錯誤訊息:', error.message)
+    console.error('   完整錯誤:', error)
     client = null
     db = null
     throw error
@@ -71,12 +86,50 @@ export async function getDatabase(): Promise<Db> {
 }
 
 /**
- * 獲取指定的 Collection
+ * 獲取指定的 Collection（帶重試機制）
  * @param collectionName Collection 名稱
+ * @param maxRetries 最大重試次數
  */
-export async function getCollection<T = any>(collectionName: string): Promise<Collection<T>> {
-  const database = await getDatabase()
-  return database.collection<T>(collectionName)
+export async function getCollection<T = any>(
+  collectionName: string,
+  maxRetries: number = 3
+): Promise<Collection<T>> {
+  let lastError: any
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const database = await getDatabase()
+      const collection = database.collection<T>(collectionName)
+
+      // 測試連接是否真的可用（使用 countDocuments 因為它很輕量）
+      if (attempt > 0) {
+        await collection.estimatedDocumentCount()
+        console.log(`✅ 重試成功 (第 ${attempt + 1} 次嘗試)`)
+      }
+
+      return collection
+    } catch (error: any) {
+      lastError = error
+      console.error(`⚠️ 獲取 Collection 失敗 (嘗試 ${attempt + 1}/${maxRetries})`)
+      console.error('   錯誤:', error.message)
+
+      // 如果不是最後一次嘗試，等待一下再重試
+      if (attempt < maxRetries - 1) {
+        // 清除現有連接，強制重新連接
+        client = null
+        db = null
+
+        // 指數退避：等待時間遞增
+        const waitTime = Math.min(1000 * Math.pow(2, attempt), 5000)
+        console.log(`   等待 ${waitTime}ms 後重試...`)
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+      }
+    }
+  }
+
+  // 所有重試都失敗
+  console.error(`❌ 獲取 Collection "${collectionName}" 失敗，已重試 ${maxRetries} 次`)
+  throw lastError
 }
 
 /**
