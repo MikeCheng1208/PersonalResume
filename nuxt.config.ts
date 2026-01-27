@@ -1,6 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
+  // 添加這個 Nitro 配置  
+  nitro: {  
+    preset: 'node-server'
+  },  
   // Runtime 配置 - 環境變數
   runtimeConfig: {
     // Server-side 環境變數（不會暴露給客戶端）
