@@ -30,7 +30,7 @@ export async function getMongoClient(): Promise<MongoClient> {
   const uri = config.mongodbUri
 
   if (!uri) {
-    throw new Error('MONGODB_URI 環境變數未設定')
+    throw new Error('MONGO_URI 環境變數未設定')
   }
 
   try {
@@ -99,7 +99,7 @@ export async function getCollection<T = any>(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const database = await getDatabase()
-      const collection = database.collection<T>(collectionName)
+      const collection = database.collection(collectionName)
 
       // 測試連接是否真的可用（使用 countDocuments 因為它很輕量）
       if (attempt > 0) {

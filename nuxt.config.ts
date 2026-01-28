@@ -12,12 +12,12 @@ export default defineNuxtConfig({
   // Runtime 配置 - 環境變數
   runtimeConfig: {
     // Server-side 環境變數（不會暴露給客戶端）
-    mongodbUri: process.env.MONGODB_URI || '',
-    mongodbUsername: process.env.MONGODB_USERNAME || '',
-    mongodbPassword: process.env.MONGODB_PASSWORD || '',
-    mongodbHost: process.env.MONGODB_HOST || '',
-    mongodbPort: process.env.MONGODB_PORT || '27017',
-    mongodbDatabase: process.env.MONGODB_DATABASE || '',
+    mongodbUri: process.env.MONGO_URI || '',
+    mongodbUsername: process.env.MONGO_USERNAME || '',
+    mongodbPassword: process.env.MONGO_PASSWORD || '',
+    mongodbHost: process.env.MONGO_HOST || '',
+    mongodbPort: process.env.MONGO_PORT || '27017',
+    mongodbDatabase: process.env.MONGO_DATABASE || '',
     jwtSecret: process.env.JWT_SECRET || '',
     cookieSecure: process.env.COOKIE_SECURE === 'true'
   },
