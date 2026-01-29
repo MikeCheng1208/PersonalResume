@@ -206,10 +206,17 @@ JWT_SECRET="your-super-secret-jwt-key-min-32-characters-long"
 
 # Cookie 安全設定（生產環境設為 true）
 COOKIE_SECURE="false"
+
+# MinIO 物件儲存（圖片上傳用）
+MINIO_ENDPOINT="your-minio-endpoint.com"   # MinIO 伺服器位址（不含 http://）
+MINIO_ACCESS_KEY="your_access_key"         # 存取金鑰
+MINIO_SECRET_KEY="your_secret_key"         # 秘密金鑰
+MINIO_BUCKET_NAME="your_bucket_name"       # Bucket 名稱
+MINIO_USE_SSL="true"                       # 是否使用 HTTPS（生產環境設 true）
 ```
 
 **配置映射** (`nuxt.config.ts` → `runtimeConfig`)
-- 後端使用：`useRuntimeConfig().mongodbUri`
+- 後端使用：`useRuntimeConfig().mongodbUri`、`useRuntimeConfig().minioEndpoint` 等
 - 前端無法存取這些敏感變數
 
 ### 初始化與管理腳本
@@ -376,5 +383,83 @@ if (!hasPermission(user, 'projects:write')) {
 - **框架**: Nuxt 4（Vue 3 + TypeScript）
 - **UI**: @nuxt/ui（Tailwind CSS 4）
 - **資料庫**: MongoDB（官方驅動）
+- **物件儲存**: MinIO（S3 相容，用於圖片上傳）
 - **認證**: JWT + bcrypt
 - **部署**: 支援 SSR（`npm run build`）和靜態生成（`npm run generate`）
+
+## 圖片上傳系統（MinIO）
+
+### 架構說明
+
+本專案使用 MinIO 作為物件儲存服務，用於儲存作品封面、個人照片、OG 分享圖片等。MinIO 與 AWS S3 API 相容，可在本地部署或使用雲端服務（如 Zeabur）。
+
+### 核心檔案
+
+- `server/utils/minio.ts` - MinIO 工具函數（連接、上傳、刪除）
+- `server/api/admin/upload/image.post.ts` - 圖片上傳 API
+- `server/api/admin/upload/delete.post.ts` - 圖片刪除 API
+- `app/components/admin/ImageUpload.vue` - 基礎圖片上傳組件
+- `app/components/admin/ImageCropUpload.vue` - 支援裁切的圖片上傳組件
+
+### 工具函數 (`server/utils/minio.ts`)
+```typescript
+getMinioClient()                          // 取得 MinIO 客戶端實例（單例）
+ensureBucket(bucketName)                  // 確保 Bucket 存在並設為公開讀取
+uploadFile(bucket, name, buffer, type)    // 上傳檔案，返回公開 URL
+deleteFile(bucket, objectName)            // 刪除檔案
+generateFileName(originalName)            // 產生唯一檔名（timestamp-random.ext）
+isValidImageType(contentType)             // 驗證圖片類型
+```
+
+### 支援的圖片格式
+- JPEG、PNG、GIF、WebP、SVG
+- 最大檔案大小：10MB
+
+### 上傳流程
+1. 前端選擇圖片 → 可選裁切
+2. 呼叫 `POST /api/admin/upload/image`
+3. 後端驗證類型和大小
+4. 上傳至 MinIO，自動設定公開讀取權限
+5. 返回公開 URL 供前端使用
+
+### 圖片儲存路徑
+```
+{bucket}/
+├── projects/       # 作品封面和圖片
+├── profile/        # 個人照片
+└── og/             # OG 分享圖片
+```
+
+### Zeabur 部署設定
+
+若使用 Zeabur 部署，需要：
+1. 在 Zeabur 建立 MinIO 服務
+2. 取得連接資訊並設定環境變數
+3. Bucket 會在首次上傳時自動建立並設定公開讀取權限
+
+### 本地開發設定
+
+使用 Docker 啟動本地 MinIO：
+```bash
+docker run -d \
+  --name minio \
+  -p 9000:9000 \
+  -p 9001:9001 \
+  -e MINIO_ROOT_USER=minioadmin \
+  -e MINIO_ROOT_PASSWORD=minioadmin \
+  minio/minio server /data --console-address ":9001"
+```
+
+本地環境變數範例：
+```bash
+MINIO_ENDPOINT="localhost:9000"
+MINIO_ACCESS_KEY="minioadmin"
+MINIO_SECRET_KEY="minioadmin"
+MINIO_BUCKET_NAME="portfolio"
+MINIO_USE_SSL="false"
+```
+
+### 注意事項
+- 上傳的圖片會設為公開讀取（任何人可透過 URL 存取）
+- 刪除作品時應同時刪除相關圖片以節省儲存空間
+- 圖片 URL 會儲存在 MongoDB 文件中

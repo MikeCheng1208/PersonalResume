@@ -8,9 +8,10 @@
 - [步驟一：建立 Zeabur 帳號](#步驟一建立-zeabur-帳號)
 - [步驟二：建立專案](#步驟二建立專案)
 - [步驟三：部署 MongoDB 資料庫](#步驟三部署-mongodb-資料庫)
-- [步驟四：部署網站服務](#步驟四部署網站服務)
-- [步驟五：環境變數設定](#步驟五環境變數設定)
-- [步驟六：綁定網域](#步驟六綁定網域)
+- [步驟四：部署 MinIO 物件儲存](#步驟四部署-minio-物件儲存)
+- [步驟五：部署網站服務](#步驟五部署網站服務)
+- [步驟六：環境變數設定](#步驟六環境變數設定)
+- [步驟七：綁定網域](#步驟七綁定網域)
 - [常見問題](#常見問題)
 
 ---
@@ -73,7 +74,42 @@
 
 ---
 
-## 步驟四：部署網站服務
+## 步驟四：部署 MinIO 物件儲存
+
+網站需要 MinIO 來儲存上傳的圖片（作品封面、個人照片等）。
+
+1. 在專案頁面，點擊「Add Service」
+2. 選擇「Marketplace」分頁
+3. 搜尋並選擇「MinIO」
+4. 點擊「Deploy」開始部署
+
+部署完成後，你會看到 MinIO 服務出現在專案中。
+
+### 取得 MinIO 連接資訊
+
+1. 點擊 MinIO 服務卡片
+2. 切換到「Connect」分頁
+3. 記下以下資訊：
+
+| 項目 | 說明 |
+|------|------|
+| **Endpoint** | MinIO 伺服器位址（例如：`xxx.clusters.zeabur.com`） |
+| **Access Key** | 存取金鑰（通常是 `root` 或自動產生的值） |
+| **Secret Key** | 秘密金鑰 |
+
+> 請保存這些資訊，稍後設定環境變數時會用到。
+
+### 設定 Bucket 名稱
+
+你可以自訂 Bucket 名稱，建議使用：
+- `portfolio` - 簡單易記
+- `your-name-portfolio` - 如果你有多個專案
+
+> Bucket 會在首次上傳圖片時自動建立，並自動設定公開讀取權限。
+
+---
+
+## 步驟五：部署網站服務
 
 1. 在專案頁面，點擊「Add Service」
 2. 選擇「Git」分頁
@@ -85,7 +121,7 @@
 
 ---
 
-## 步驟五：環境變數設定
+## 步驟六：環境變數設定
 
 這是最重要的步驟！網站需要正確的環境變數才能運作。
 
@@ -100,6 +136,11 @@
 | `MONGO_URI` | `mongodb://root:xxx@xxx.zeabur.com:12345/portfolio` | MongoDB 連接字串（步驟三取得的，記得加上資料庫名稱） |
 | `JWT_SECRET` | `your-super-secret-key-min-32-characters` | JWT 加密密鑰，請自行設定一個至少 32 個字元的隨機字串 |
 | `COOKIE_SECURE` | `true` | 生產環境必須設為 `true` |
+| `MINIO_ENDPOINT` | `xxx.clusters.zeabur.com` | MinIO 伺服器位址（步驟四取得，不含 `https://`） |
+| `MINIO_ACCESS_KEY` | `your_access_key` | MinIO 存取金鑰 |
+| `MINIO_SECRET_KEY` | `your_secret_key` | MinIO 秘密金鑰 |
+| `MINIO_BUCKET_NAME` | `portfolio` | Bucket 名稱（自訂） |
+| `MINIO_USE_SSL` | `true` | 使用 HTTPS（Zeabur 上必須為 `true`） |
 
 ### 如何設定
 
@@ -129,6 +170,31 @@ true
 - 生產環境固定設為 `true`
 - 這會啟用 HTTPS-only Cookie，提升安全性
 
+**MINIO_ENDPOINT**
+```
+xxx.clusters.zeabur.com
+```
+- 從 MinIO 服務的 Connect 頁面取得
+- **注意**：不要加上 `https://`，只需要域名部分
+
+**MINIO_ACCESS_KEY 和 MINIO_SECRET_KEY**
+- 從 MinIO 服務的 Connect 頁面取得
+- 通常 Access Key 是 `root`，Secret Key 是自動產生的
+
+**MINIO_BUCKET_NAME**
+```
+portfolio
+```
+- 自訂名稱，建議使用小寫字母和連字號
+- Bucket 會在首次上傳時自動建立
+
+**MINIO_USE_SSL**
+```
+true
+```
+- Zeabur 上固定設為 `true`（使用 HTTPS）
+- 本地開發時設為 `false`
+
 ### 設定完成後
 
 1. 點擊「Save」儲存環境變數
@@ -137,7 +203,7 @@ true
 
 ---
 
-## 步驟六：綁定網域
+## 步驟七：綁定網域
 
 ### 使用 Zeabur 免費網域
 
@@ -224,6 +290,24 @@ true
 2. `git push` 到 GitHub
 3. Zeabur 會自動偵測變更並重新部署
 
+### Q: 圖片上傳失敗或無法顯示？
+
+**A:** 請檢查 MinIO 設定：
+
+1. 確認所有 MinIO 環境變數都已設定
+2. 確認 `MINIO_ENDPOINT` 不包含 `https://`
+3. 確認 `MINIO_USE_SSL` 設為 `true`
+4. 確認 MinIO 服務正在運行
+5. 查看 Deployment Logs 是否有 MinIO 相關錯誤
+
+### Q: 圖片上傳成功但無法公開存取？
+
+**A:** 這通常是 Bucket 權限問題：
+
+1. 系統會自動設定公開讀取權限
+2. 如果仍有問題，可以在後台呼叫 `/api/admin/upload/fix-policy` API 重新設定權限
+3. 或者重新部署網站服務
+
 ---
 
 ## 費用說明
@@ -233,6 +317,7 @@ Zeabur 的計費方式：
 - **免費額度**：每月有一定的免費使用額度
 - **計費方式**：超過免費額度後，按使用量計費
 - **MongoDB**：內建的 MongoDB 服務包含在計費中
+- **MinIO**：內建的 MinIO 服務包含在計費中（依儲存空間和流量計費）
 
 建議先使用免費額度測試，確認一切正常後再考慮是否升級方案。
 
