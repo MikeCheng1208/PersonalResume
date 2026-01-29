@@ -32,6 +32,7 @@ const formState = reactive({
   description: '',
   tags: [] as string[],
   color: '',
+  coverImage: '',
   coverGradient: '',
   overview: '',
   client: '',
@@ -310,7 +311,7 @@ watch(() => formState.projectId, (newValue) => {
             </div>
 
             <!-- Color -->
-            <div class="form-field">
+            <div class="form-field full-width">
               <label class="field-label">
                 卡片顏色
                 <span class="required">*</span>
@@ -322,22 +323,7 @@ watch(() => formState.projectId, (newValue) => {
                 placeholder="#667EEA"
                 :disabled="isSaving"
               />
-              <p class="field-hint">卡片漸層色</p>
-            </div>
-
-            <!-- Cover Gradient -->
-            <div class="form-field">
-              <label class="field-label">
-                封面漸層
-                <span class="required">*</span>
-              </label>
-              <input
-                v-model="formState.coverGradient"
-                type="text"
-                class="field-input"
-                placeholder="from-blue-500 to-purple-600"
-                :disabled="isSaving"
-              />
+              <p class="field-hint">作品列表卡片的背景色</p>
             </div>
           </div>
         </div>
@@ -453,6 +439,58 @@ watch(() => formState.projectId, (newValue) => {
                 rows="4"
                 :disabled="isSaving"
               ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 作品封面設定 -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3 class="section-title">作品封面設定</h3>
+            <p class="section-description">設定作品卡片和分享時顯示的封面圖片</p>
+          </div>
+
+          <div class="cover-section">
+            <div class="cover-upload-area">
+              <label class="field-label">封面圖片</label>
+              <ImageUpload
+                v-model="formState.coverImage"
+                :folder="`projects/${formState.projectId || 'new'}/cover`"
+                placeholder="點擊或拖曳上傳封面圖片"
+                help="建議尺寸 1200x630，支援 JPG、PNG、WebP"
+                preview-class="cover-image-preview"
+              />
+              <p class="field-hint">作品卡片和分享時顯示的主要圖片</p>
+            </div>
+
+            <div class="cover-gradient-area">
+              <div class="form-field">
+                <label class="field-label">
+                  封面漸層色
+                  <span class="required">*</span>
+                </label>
+                <input
+                  v-model="formState.coverGradient"
+                  type="text"
+                  class="field-input"
+                  placeholder="from-blue-500 to-purple-600"
+                  :disabled="isSaving"
+                />
+                <p class="field-hint">當封面圖片載入中或未設定時顯示的漸層背景</p>
+              </div>
+
+              <!-- 漸層預覽 -->
+              <div class="gradient-preview-wrapper">
+                <label class="field-label">漸層預覽</label>
+                <div
+                  class="gradient-preview"
+                  :class="`bg-gradient-to-br ${formState.coverGradient}`"
+                >
+                  <span v-if="!formState.coverGradient" class="preview-placeholder">
+                    輸入漸層色後預覽
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1006,6 +1044,58 @@ input:disabled + .slider {
     width: 100%;
     justify-content: center;
   }
+}
+
+/* Cover Section */
+.cover-section {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .cover-section {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.cover-upload-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cover-upload-area :deep(.cover-image-preview) {
+  max-height: 300px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.cover-gradient-area {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gradient-preview-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gradient-preview {
+  height: 120px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.preview-placeholder {
+  font-size: 0.875rem;
+  color: #94a3b8;
 }
 
 /* Images Section */

@@ -37,6 +37,7 @@ const formState = reactive({
   description: '',
   tags: [] as string[],
   color: '',
+  coverImage: '',
   coverGradient: '',
   overview: '',
   client: '',
@@ -76,6 +77,7 @@ const loadProject = async () => {
       description: project.value.description,
       tags: [...project.value.tags],
       color: project.value.color,
+      coverImage: project.value.coverImage || '',
       coverGradient: project.value.coverGradient,
       overview: project.value.overview,
       client: project.value.client,
@@ -385,30 +387,18 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="form-grid-2">
-            <div class="form-group">
-              <label class="form-label">
-                卡片顏色 <span class="required">*</span>
-              </label>
-              <input
-                v-model="formState.color"
-                type="text"
-                class="form-input"
-                :disabled="isSaving"
-              />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">
-                封面漸層 <span class="required">*</span>
-              </label>
-              <input
-                v-model="formState.coverGradient"
-                type="text"
-                class="form-input"
-                :disabled="isSaving"
-              />
-            </div>
+          <div class="form-group">
+            <label class="form-label">
+              卡片顏色 <span class="required">*</span>
+            </label>
+            <input
+              v-model="formState.color"
+              type="text"
+              class="form-input"
+              placeholder="#667EEA"
+              :disabled="isSaving"
+            />
+            <p class="form-hint">作品列表卡片的背景色</p>
           </div>
         </div>
 
@@ -502,6 +492,56 @@ onMounted(() => {
               class="form-textarea"
               :disabled="isSaving"
             ></textarea>
+          </div>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <!-- 作品封面設定 -->
+        <div class="form-section">
+          <h3 class="section-title">作品封面設定</h3>
+
+          <div class="cover-section">
+            <div class="cover-upload-area">
+              <label class="form-label">封面圖片</label>
+              <ImageUpload
+                v-model="formState.coverImage"
+                :folder="`projects/${formState.projectId}/cover`"
+                placeholder="點擊或拖曳上傳封面圖片"
+                help="建議尺寸 1200x630，支援 JPG、PNG、WebP"
+                preview-class="cover-image-preview"
+              />
+              <p class="form-hint">作品卡片和分享時顯示的主要圖片</p>
+            </div>
+
+            <div class="cover-gradient-area">
+              <div class="form-group">
+                <label class="form-label">
+                  封面漸層色 <span class="required">*</span>
+                </label>
+                <input
+                  v-model="formState.coverGradient"
+                  type="text"
+                  class="form-input"
+                  placeholder="from-blue-500 to-purple-600"
+                  :disabled="isSaving"
+                />
+                <p class="form-hint">當封面圖片載入中或未設定時顯示的漸層背景</p>
+              </div>
+
+              <!-- 漸層預覽 -->
+              <div class="gradient-preview-wrapper">
+                <label class="form-label">漸層預覽</label>
+                <div
+                  class="gradient-preview"
+                  :class="`bg-gradient-to-br ${formState.coverGradient}`"
+                >
+                  <span v-if="!formState.coverGradient" class="preview-placeholder">
+                    輸入漸層色後預覽
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1448,6 +1488,58 @@ input:disabled + .slider {
 .delete-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Cover Section */
+.cover-section {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .cover-section {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.cover-upload-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cover-upload-area :deep(.cover-image-preview) {
+  max-height: 300px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.cover-gradient-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gradient-preview-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gradient-preview {
+  height: 120px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.preview-placeholder {
+  font-size: 14px;
+  color: #94a3b8;
 }
 
 /* Images Section */
