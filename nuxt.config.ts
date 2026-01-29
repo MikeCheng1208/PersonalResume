@@ -19,7 +19,13 @@ export default defineNuxtConfig({
     mongodbPort: process.env.MONGO_PORT || '27017',
     mongodbDatabase: process.env.MONGO_DATABASE || '',
     jwtSecret: process.env.JWT_SECRET || '',
-    cookieSecure: process.env.COOKIE_SECURE === 'true'
+    cookieSecure: process.env.COOKIE_SECURE === 'true',
+    // MinIO 物件儲存設定
+    minioEndpoint: process.env.MINIO_ENDPOINT || '',
+    minioAccessKey: process.env.MINIO_ACCESS_KEY || '',
+    minioSecretKey: process.env.MINIO_SECRET_KEY || '',
+    minioBucketName: process.env.MINIO_BUCKET_NAME || '',
+    minioUseSSL: process.env.MINIO_USE_SSL === 'true'
   },
   devtools: { enabled: true },
 

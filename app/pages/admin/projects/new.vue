@@ -3,6 +3,7 @@ import { ref, reactive, watch } from 'vue'
 import { useAdminAuth } from '~/composables/admin/useAdminAuth'
 import { useAdminAPI } from '~/composables/admin/useAdminAPI'
 import AdminLayout from '~/components/admin/AdminLayout.vue'
+import ImageUpload from '~/components/admin/ImageUpload.vue'
 
 definePageMeta({
   middleware: 'admin-auth'
@@ -65,6 +66,48 @@ const addTag = () => {
  */
 const removeTag = (index: number) => {
   formState.tags.splice(index, 1)
+}
+
+/**
+ * 新增圖片項目
+ */
+const addImage = () => {
+  formState.images.push({
+    layout: 'full',
+    src: '',
+    gradient: 'from-slate-100 to-slate-200',
+    label: '',
+    caption: '',
+    order: formState.images.length
+  })
+}
+
+/**
+ * 移除圖片項目
+ */
+const removeImage = (index: number) => {
+  formState.images.splice(index, 1)
+  // 重新計算 order
+  formState.images.forEach((img, i) => {
+    img.order = i
+  })
+}
+
+/**
+ * 移動圖片位置
+ */
+const moveImage = (index: number, direction: 'up' | 'down') => {
+  const newIndex = direction === 'up' ? index - 1 : index + 1
+  if (newIndex < 0 || newIndex >= formState.images.length) return
+
+  const temp = formState.images[index]
+  formState.images[index] = formState.images[newIndex]
+  formState.images[newIndex] = temp
+
+  // 重新計算 order
+  formState.images.forEach((img, i) => {
+    img.order = i
+  })
 }
 
 /**
@@ -410,6 +453,142 @@ watch(() => formState.projectId, (newValue) => {
                 rows="4"
                 :disabled="isSaving"
               ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 作品圖片 -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3 class="section-title">作品圖片</h3>
+            <p class="section-description">上傳作品展示圖片，支援全寬或半寬版面配置</p>
+          </div>
+
+          <div class="images-section">
+            <div class="images-header">
+              <button
+                type="button"
+                class="add-image-button"
+                @click="addImage"
+                :disabled="isSaving"
+              >
+                <UIcon name="i-heroicons-plus" />
+                新增圖片
+              </button>
+            </div>
+
+            <div v-if="formState.images.length === 0" class="empty-images">
+              <UIcon name="i-heroicons-photo" class="empty-icon" />
+              <p>尚無作品圖片，點擊「新增圖片」開始添加。</p>
+            </div>
+
+            <div v-else class="images-list">
+              <div
+                v-for="(image, index) in formState.images"
+                :key="index"
+                class="image-item"
+              >
+                <div class="image-item-header">
+                  <span class="image-item-number">圖片 #{{ index + 1 }}</span>
+                  <div class="image-item-actions">
+                    <button
+                      type="button"
+                      class="move-button"
+                      @click="moveImage(index, 'up')"
+                      :disabled="isSaving || index === 0"
+                      title="上移"
+                    >
+                      <UIcon name="i-heroicons-chevron-up" />
+                    </button>
+                    <button
+                      type="button"
+                      class="move-button"
+                      @click="moveImage(index, 'down')"
+                      :disabled="isSaving || index === formState.images.length - 1"
+                      title="下移"
+                    >
+                      <UIcon name="i-heroicons-chevron-down" />
+                    </button>
+                    <button
+                      type="button"
+                      class="remove-image-button"
+                      @click="removeImage(index)"
+                      :disabled="isSaving"
+                    >
+                      <UIcon name="i-heroicons-trash" />
+                    </button>
+                  </div>
+                </div>
+
+                <div class="image-item-content">
+                  <!-- 圖片上傳區 -->
+                  <div class="image-upload-area">
+                    <ImageUpload
+                      v-model="formState.images[index].src"
+                      :folder="`projects/${formState.projectId || 'new'}`"
+                      placeholder="點擊或拖曳上傳圖片"
+                      help="支援 JPG、PNG、GIF、WebP，最大 10MB"
+                      preview-class="project-image-preview"
+                    />
+                  </div>
+
+                  <!-- 圖片設定 -->
+                  <div class="image-settings">
+                    <div class="form-grid">
+                      <div class="form-field">
+                        <label class="field-label">版面配置</label>
+                        <select
+                          v-model="formState.images[index].layout"
+                          class="field-select"
+                          :disabled="isSaving"
+                        >
+                          <option value="full">全寬 (Full Width)</option>
+                          <option value="half">半寬 (Half Width)</option>
+                        </select>
+                        <p class="field-hint">全寬佔滿整行，半寬可並列顯示</p>
+                      </div>
+
+                      <div class="form-field">
+                        <label class="field-label">漸層背景</label>
+                        <input
+                          v-model="formState.images[index].gradient"
+                          type="text"
+                          class="field-input"
+                          placeholder="from-slate-100 to-slate-200"
+                          :disabled="isSaving"
+                        />
+                        <p class="field-hint">圖片載入前的背景漸層</p>
+                      </div>
+                    </div>
+
+                    <div class="form-grid">
+                      <div class="form-field">
+                        <label class="field-label">
+                          標籤 <span class="required">*</span>
+                        </label>
+                        <input
+                          v-model="formState.images[index].label"
+                          type="text"
+                          class="field-input"
+                          placeholder="例如: 首頁設計"
+                          :disabled="isSaving"
+                        />
+                      </div>
+
+                      <div class="form-field">
+                        <label class="field-label">說明文字</label>
+                        <input
+                          v-model="formState.images[index].caption"
+                          type="text"
+                          class="field-input"
+                          placeholder="選填：圖片說明"
+                          :disabled="isSaving"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -827,5 +1006,204 @@ input:disabled + .slider {
     width: 100%;
     justify-content: center;
   }
+}
+
+/* Images Section */
+.images-section {
+  margin-top: 0.5rem;
+}
+
+.images-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.add-image-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  border: none;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.add-image-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.add-image-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.empty-images {
+  padding: 4rem 2rem;
+  text-align: center;
+  background: #f8fafc;
+  border: 2px dashed #e5e7eb;
+  border-radius: 16px;
+}
+
+.empty-images .empty-icon {
+  width: 56px;
+  height: 56px;
+  color: #cbd5e1;
+  margin-bottom: 1rem;
+}
+
+.empty-images p {
+  font-size: 0.9375rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.images-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.image-item {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.image-item:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.image-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.image-item-number {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.image-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.move-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.move-button:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #3b82f6;
+}
+
+.move-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.remove-image-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remove-image-button:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.remove-image-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.image-item-content {
+  padding: 1.25rem;
+}
+
+.image-upload-area {
+  margin-bottom: 1.25rem;
+}
+
+.image-upload-area :deep(.project-image-preview) {
+  max-height: 400px;
+  object-fit: contain;
+}
+
+.image-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Select */
+.field-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  color: #0f172a;
+  background: white;
+  transition: all 0.3s;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 20px;
+  padding-right: 44px;
+}
+
+.field-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.field-select:disabled {
+  background-color: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
 }
 </style>
