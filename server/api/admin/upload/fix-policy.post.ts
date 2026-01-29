@@ -1,4 +1,4 @@
-import { getMinioClient } from '../../../utils/minio'
+import { getMinioClient, markPolicyConfigured } from '../../../utils/minio'
 
 /**
  * POST /api/admin/upload/fix-policy
@@ -40,6 +40,9 @@ export default defineEventHandler(async (event) => {
     }
 
     await client.setBucketPolicy(bucketName, JSON.stringify(policy))
+
+    // 標記已設定，避免重複設定
+    markPolicyConfigured(bucketName)
 
     console.log(`✓ MinIO Bucket "${bucketName}" 已設為公開讀取`)
 
