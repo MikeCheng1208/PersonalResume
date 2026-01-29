@@ -29,6 +29,7 @@
 | 框架 | Nuxt 4 (Vue 3 + TypeScript) |
 | UI | Tailwind CSS 4 + @nuxt/ui |
 | 資料庫 | MongoDB |
+| 物件儲存 | MinIO（圖片上傳） |
 | 認證 | JWT + httpOnly Cookie |
 | 部署 | Zeabur |
 
@@ -84,8 +85,13 @@
 | `MONGO_URI` | 是 | MongoDB 連接字串 | `mongodb+srv://user:pass@cluster.mongodb.net/dbname` |
 | `JWT_SECRET` | 是 | JWT 加密密鑰（至少 32 字元） | `your-super-secret-key-at-least-32-chars` |
 | `COOKIE_SECURE` | 否 | Cookie 安全設定 | `true`（生產環境）/ `false`（本地開發） |
+| `MINIO_ENDPOINT` | 是 | MinIO 伺服器位址 | `xxx.clusters.zeabur.com` |
+| `MINIO_ACCESS_KEY` | 是 | MinIO 存取金鑰 | `your_access_key` |
+| `MINIO_SECRET_KEY` | 是 | MinIO 秘密金鑰 | `your_secret_key` |
+| `MINIO_BUCKET_NAME` | 是 | Bucket 名稱 | `portfolio` |
+| `MINIO_USE_SSL` | 否 | 是否使用 HTTPS | `true`（生產環境）/ `false`（本地開發） |
 
-詳細環境變數設定請參考：[環境變數設定指南](./docs/zeabur-deploy.md#環境變數設定)
+詳細環境變數設定請參考：[環境變數設定指南](./docs/zeabur-deploy.md#步驟六環境變數設定)
 
 ## 專案結構
 
@@ -133,6 +139,18 @@ npm run reset-password   # 重置 admin 密碼為預設值
 ## 授權
 
 MIT License
+
+## 免責聲明
+
+本專案以「現狀」（AS IS）提供，不附帶任何明示或暗示的保證。
+
+- 作者**不對使用本專案所造成的任何直接或間接損害負責**，包括但不限於：資料遺失、服務中斷、安全漏洞、商業損失等。
+- 使用者應自行承擔使用本專案的所有風險。
+- 本專案僅供學習和參考用途，若用於生產環境，請自行評估並做好安全措施。
+- 作者不保證本專案的功能完整性、穩定性或適用於任何特定用途。
+- 使用本專案即表示您同意本免責聲明的所有條款。
+
+**簡單來說**：歡迎自由使用，但出了任何問題請自行負責。
 
 ---
 
