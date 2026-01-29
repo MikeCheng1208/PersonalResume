@@ -1,37 +1,54 @@
 /**
  * Admin 登入 API
  * POST /api/admin/auth/login
+ *
+ * 安全措施：
+ * - NoSQL Injection 防護
+ * - IP-based Rate Limiting
+ * - 帳號鎖定機制
+ * - 輸入驗證與清理
  */
 
 import type { AdminUserDocument } from '~/types/database'
 import { COLLECTIONS } from '~/types/database'
 
-interface LoginRequest {
-  username: string
-  password: string
-}
-
 export default defineEventHandler(async (event) => {
+  const clientIP = getClientIP(event)
+
   try {
     console.log('🔐 開始處理登入請求')
+    console.log(`📍 客戶端 IP: ${clientIP}`)
 
-    // 讀取請求資料
-    const body = await readBody<LoginRequest>(event)
-
-    // 驗證輸入
-    if (!body.username || !body.password) {
+    // 檢查 IP-based Rate Limit
+    const rateLimit = checkRateLimit(clientIP, LOGIN_RATE_LIMIT)
+    if (!rateLimit.allowed) {
+      const waitMinutes = Math.ceil(rateLimit.resetIn / 60000)
+      console.warn(`🚫 IP ${clientIP} 已達到登入嘗試限制`)
       throw createError({
-        statusCode: 400,
-        message: '請提供帳號和密碼'
+        statusCode: 429,
+        message: `登入嘗試次數過多，請在 ${waitMinutes} 分鐘後再試`
       })
     }
 
-    console.log(`📝 嘗試登入帳號: ${body.username}`)
+    // 讀取並驗證請求資料（包含 NoSQL Injection 防護）
+    const rawBody = await readBody(event)
+    const sanitized = sanitizeLoginInput(rawBody)
 
-    // 查詢使用者
+    if (!sanitized.valid) {
+      throw createError({
+        statusCode: 400,
+        message: sanitized.error || '無效的請求'
+      })
+    }
+
+    const { username, password } = sanitized
+
+    console.log(`📝 嘗試登入帳號: ${username}`)
+
+    // 查詢使用者（使用已清理的 username）
     const collection = await getCollection<AdminUserDocument>(COLLECTIONS.ADMIN_USERS)
     const user = await collection.findOne({
-      username: body.username
+      username: username
     })
 
     console.log(`👤 找到使用者: ${user ? '是' : '否'}`)
@@ -62,8 +79,8 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // 驗證密碼
-    const isPasswordValid = await verifyPassword(body.password, user.passwordHash)
+    // 驗證密碼（使用已清理的 password）
+    const isPasswordValid = await verifyPassword(password!, user.passwordHash)
 
     if (!isPasswordValid) {
       // 處理登入失敗
@@ -93,8 +110,9 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // 登入成功，重置失敗次數
+    // 登入成功，重置失敗次數和 Rate Limit
     const successUpdate = resetLoginAttempts()
+    resetRateLimit(clientIP, 'login:')
 
     await collection.updateOne(
       { _id: user._id },

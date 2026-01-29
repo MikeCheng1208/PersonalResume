@@ -3,6 +3,7 @@ import { ref, reactive, onMounted } from "vue";
 import { useAdminAuth } from "~/composables/admin/useAdminAuth";
 import { useAdminAPI } from "~/composables/admin/useAdminAPI";
 import AdminLayout from "~/components/admin/AdminLayout.vue";
+import ImageCropUpload from "~/components/admin/ImageCropUpload.vue";
 
 definePageMeta({
   middleware: "admin-auth",
@@ -321,16 +322,32 @@ onMounted(() => {
             <!-- OG 圖片 -->
             <div class="form-field full-width">
               <label class="field-label">分享圖片</label>
-              <input
-                v-model="formState.ogImage"
-                type="url"
-                class="field-input"
-                placeholder="https://example.com/og-image.jpg"
-                :disabled="isSaving"
-              />
-              <p class="field-hint">
-                建議尺寸 1200x630 像素，當網站被分享時顯示的縮圖
-              </p>
+              <div class="og-image-upload-wrapper">
+                <div class="og-image-upload-container">
+                  <ImageCropUpload
+                    v-model="formState.ogImage"
+                    folder="og"
+                    placeholder="點擊上傳分享圖片"
+                    help="支援 JPG、PNG、WebP，最大 10MB"
+                    :aspect-ratio="1200 / 630"
+                    cropper-title="裁切分享圖片"
+                    preview-class="og-image-preview"
+                  />
+                </div>
+                <div class="og-image-info">
+                  <div class="og-image-info-card">
+                    <UIcon name="i-heroicons-information-circle" class="info-icon-small" />
+                    <div class="og-image-info-content">
+                      <p class="og-image-info-title">建議圖片尺寸</p>
+                      <p class="og-image-info-size">1200 x 630 像素</p>
+                      <p class="og-image-info-ratio">比例 1.91:1（橫向）</p>
+                    </div>
+                  </div>
+                  <p class="og-image-info-desc">
+                    此圖片將在 Facebook、LINE、Twitter 等社群平台分享時顯示為縮圖
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -658,6 +675,98 @@ onMounted(() => {
   text-align: center;
 }
 
+/* OG Image Upload */
+.og-image-upload-wrapper {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.og-image-upload-container {
+  flex: 1;
+  max-width: 400px;
+}
+
+.og-image-upload-container :deep(.upload-preview) {
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.og-image-upload-container :deep(.og-image-preview) {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1200 / 630;
+  object-fit: cover;
+}
+
+.og-image-upload-container :deep(.upload-dropzone) {
+  aspect-ratio: 1200 / 630;
+  border-radius: 12px;
+  min-height: 160px;
+}
+
+.og-image-info {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.5rem;
+}
+
+.og-image-info-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+}
+
+.info-icon-small {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: #0284c7;
+  margin-top: 2px;
+}
+
+.og-image-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.og-image-info-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #0c4a6e;
+  margin: 0;
+}
+
+.og-image-info-size {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0369a1;
+  margin: 0;
+  font-family: ui-monospace, monospace;
+}
+
+.og-image-info-ratio {
+  font-size: 0.75rem;
+  color: #0284c7;
+  margin: 0;
+}
+
+.og-image-info-desc {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+  max-width: 200px;
+}
+
 /* Info Card */
 .info-card {
   display: flex;
@@ -841,6 +950,23 @@ onMounted(() => {
 
   .og-preview-image {
     height: 150px;
+  }
+
+  .og-image-upload-wrapper {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .og-image-upload-container {
+    max-width: 100%;
+  }
+
+  .og-image-info {
+    width: 100%;
+  }
+
+  .og-image-info-desc {
+    max-width: 100%;
   }
 
   .info-card {

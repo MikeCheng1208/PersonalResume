@@ -1,0 +1,36 @@
+/**
+ * 安全 Headers 中介軟體
+ * 為所有響應添加安全相關的 HTTP Headers
+ */
+
+export default defineEventHandler((event) => {
+  // 只對 HTML 頁面和 API 響應設置 headers
+  const path = event.path
+
+  // X-Content-Type-Options: 防止 MIME 類型嗅探
+  setHeader(event, 'X-Content-Type-Options', 'nosniff')
+
+  // X-Frame-Options: 防止點擊劫持（Clickjacking）
+  // 只允許同源網頁嵌入
+  setHeader(event, 'X-Frame-Options', 'SAMEORIGIN')
+
+  // X-XSS-Protection: 啟用瀏覽器的 XSS 過濾器
+  // 雖然現代瀏覽器已棄用，但對舊版瀏覽器仍有用
+  setHeader(event, 'X-XSS-Protection', '1; mode=block')
+
+  // Referrer-Policy: 控制 Referer header 的發送
+  setHeader(event, 'Referrer-Policy', 'strict-origin-when-cross-origin')
+
+  // Permissions-Policy: 限制瀏覽器功能
+  setHeader(event, 'Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+
+  // 對於 API 路由，添加額外的安全 headers
+  if (path.startsWith('/api/')) {
+    // 禁止快取敏感 API 響應
+    if (path.startsWith('/api/admin/')) {
+      setHeader(event, 'Cache-Control', 'no-store, no-cache, must-revalidate, private')
+      setHeader(event, 'Pragma', 'no-cache')
+      setHeader(event, 'Expires', '0')
+    }
+  }
+})

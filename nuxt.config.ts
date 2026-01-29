@@ -49,36 +49,16 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        // Google Fonts - 預連接
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: 'anonymous' }
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: 'anonymous' },
+        // Google Fonts - 實際載入 Instrument Serif 字體（這是 FOUC 問題的關鍵修復）
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap' }
       ],
       style: [
         {
-          children: `
-            /* Critical CSS - 防止 FOUC */
-            html {
-              background: #fafaf9;
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            }
-            body {
-              margin: 0;
-              padding: 0;
-              background: #fafaf9;
-              color: #1a1a1a;
-              -webkit-font-smoothing: antialiased;
-              -moz-osx-font-smoothing: grayscale;
-            }
-            /* 預設隱藏內容，避免 FOUC */
-            #__nuxt {
-              opacity: 0;
-              transition: opacity 0.3s ease;
-            }
-            /* Vue 載入完成後顯示 */
-            #__nuxt.nuxt-loaded {
-              opacity: 1;
-            }
-          `,
-          type: 'text/css'
+          // 最小化的 Critical CSS - 只處理背景色和基本佈局，防止白閃
+          innerHTML: `html,body{background:#fafaf9;margin:0;min-height:100vh}`
         }
       ]
     }
@@ -95,7 +75,8 @@ export default defineNuxtConfig({
   experimental: {
     payloadExtraction: true,
     renderJsonPayloads: true,
-    inlineSSRStyles: false
+    // 啟用 SSR 樣式內嵌，防止 FOUC
+    inlineSSRStyles: true
   },
 
   // CSS 配置

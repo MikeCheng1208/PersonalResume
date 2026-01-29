@@ -3,6 +3,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useAdminAuth } from '~/composables/admin/useAdminAuth'
 import { useAdminAPI } from '~/composables/admin/useAdminAPI'
 import AdminLayout from '~/components/admin/AdminLayout.vue'
+import ImageCropUpload from '~/components/admin/ImageCropUpload.vue'
 
 definePageMeta({
   middleware: 'admin-auth'
@@ -21,6 +22,7 @@ if (!hasPermission('profile:write')) {
 const isLoading = ref(false)
 const isSaving = ref(false)
 const profile = ref<any>(null)
+const photoUploadRef = ref<any>(null)
 
 // 表單狀態
 const formState = reactive({
@@ -165,6 +167,20 @@ const previewChanges = () => {
   window.open('/', '_blank')
 }
 
+/**
+ * 觸發照片更換
+ */
+const triggerPhotoChange = () => {
+  photoUploadRef.value?.triggerFileSelect()
+}
+
+/**
+ * 移除照片
+ */
+const removePhoto = () => {
+  photoUploadRef.value?.handleRemove()
+}
+
 // 初始載入
 onMounted(() => {
   loadProfile()
@@ -240,17 +256,50 @@ onMounted(() => {
               />
             </div>
 
-            <!-- 照片 URL -->
-            <div class="form-field full-width">
-              <label class="field-label">照片 URL</label>
-              <input
+            </div>
+        </div>
+
+        <!-- 個人照片 -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3 class="section-title">個人照片</h3>
+            <p class="section-description">上傳您的個人照片，將自動裁切為 1:1 正方形</p>
+          </div>
+
+          <div class="photo-upload-wrapper">
+            <div class="photo-upload-container">
+              <ImageCropUpload
+                ref="photoUploadRef"
                 v-model="formState.photo"
-                type="url"
-                class="field-input"
-                placeholder="https://example.com/photo.jpg"
-                :disabled="isSaving"
+                folder="profile"
+                placeholder="點擊上傳個人照片"
+                help="支援 JPG、PNG、WebP，最大 10MB"
+                :aspect-ratio="1"
+                cropper-title="裁切個人照片"
+                preview-class="profile-photo-preview"
               />
-              <p class="field-hint">目前暫時使用 URL，未來將支援圖片上傳</p>
+            </div>
+
+            <!-- 照片操作按鈕（移出到右側） -->
+            <div v-if="formState.photo" class="photo-actions">
+              <button
+                type="button"
+                class="photo-action-btn photo-action-btn--change"
+                @click="triggerPhotoChange"
+                :disabled="isSaving"
+              >
+                <UIcon name="i-heroicons-arrow-path" />
+                更換照片
+              </button>
+              <button
+                type="button"
+                class="photo-action-btn photo-action-btn--remove"
+                @click="removePhoto"
+                :disabled="isSaving"
+              >
+                <UIcon name="i-heroicons-trash" />
+                移除照片
+              </button>
             </div>
           </div>
         </div>
@@ -550,6 +599,115 @@ onMounted(() => {
   margin: 0;
 }
 
+/* Photo Upload */
+.photo-upload-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.photo-upload-container {
+  flex-shrink: 0;
+}
+
+.photo-upload-container :deep(.profile-photo-preview) {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.photo-upload-container :deep(.upload-preview) {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 4px solid #e2e8f0;
+  overflow: hidden;
+}
+
+/* 隱藏組件內建的按鈕 */
+.photo-upload-container :deep(.preview-actions) {
+  display: none;
+}
+
+.photo-upload-container :deep(.upload-dropzone) {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  padding: 1rem;
+}
+
+.photo-upload-container :deep(.upload-icon) {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 0.5rem;
+}
+
+.photo-upload-container :deep(.upload-icon svg) {
+  width: 24px;
+  height: 24px;
+}
+
+.photo-upload-container :deep(.upload-text) {
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.photo-upload-container :deep(.upload-hint) {
+  display: none;
+}
+
+/* 照片操作按鈕 - 外部 */
+.photo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 1rem;
+}
+
+.photo-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1.25rem;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.photo-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.photo-action-btn--change {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.photo-action-btn--change:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.photo-action-btn--remove {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.photo-action-btn--remove:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
 /* Bio List */
 .bio-list {
   display: flex;
@@ -705,6 +863,24 @@ onMounted(() => {
 
   .form-field.full-width {
     grid-column: 1;
+  }
+
+  /* 照片上傳區塊響應式 */
+  .photo-upload-wrapper {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .photo-actions {
+    flex-direction: row;
+    width: 100%;
+    padding-top: 0;
+  }
+
+  .photo-action-btn {
+    flex: 1;
+    justify-content: center;
   }
 
   .bio-item {

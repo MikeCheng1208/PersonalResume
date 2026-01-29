@@ -28,14 +28,59 @@ const errorMessage = ref("");
 const showPassword = ref(false);
 
 /**
+ * 驗證帳號格式
+ */
+const validateUsername = (username: string): string | null => {
+  if (!username.trim()) {
+    return "請輸入帳號";
+  }
+  if (username.length < 3 || username.length > 50) {
+    return "帳號長度需在 3-50 字元之間";
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    return "帳號只能包含英文字母、數字和底線";
+  }
+  return null;
+};
+
+/**
+ * 驗證密碼格式
+ */
+const validatePassword = (password: string): string | null => {
+  if (!password) {
+    return "請輸入密碼";
+  }
+  if (password.length < 6) {
+    return "密碼長度至少需要 6 個字元";
+  }
+  if (password.length > 100) {
+    return "密碼長度不能超過 100 個字元";
+  }
+  return null;
+};
+
+/**
  * 處理登入
  */
 const handleLogin = async () => {
   errorMessage.value = "";
 
+  // 前端驗證
+  const usernameError = validateUsername(formState.username);
+  if (usernameError) {
+    errorMessage.value = usernameError;
+    return;
+  }
+
+  const passwordError = validatePassword(formState.password);
+  if (passwordError) {
+    errorMessage.value = passwordError;
+    return;
+  }
+
   try {
     const response = await login({
-      username: formState.username,
+      username: formState.username.trim(),
       password: formState.password,
     });
 
