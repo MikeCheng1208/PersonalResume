@@ -159,9 +159,6 @@ npm run reset-password   # 重置 admin 密碼為預設值
 - [Zeabur 部署指南](./docs/zeabur-deploy.md) - 完整的部署教學
 - [CLAUDE.md](./CLAUDE.md) - 開發者技術文件
 
-## 授權
-
-MIT License
 
 ## 免責聲明
 
@@ -177,4 +174,6 @@ MIT License
 
 ---
 
-Made with Vue.js + Nuxt
+## 授權
+
+MIT License
